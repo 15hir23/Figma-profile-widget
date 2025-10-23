@@ -1,20 +1,56 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, ChangeEvent, useRef, useEffect } from 'react';
+
+type TabType = 'about' | 'experiences' | 'recommended';
+
+interface TabContent {
+  about: string;
+  experiences: string;
+  recommended: string;
+}
 
 export default function ProfileWidget() {
-  const [activeTab, setActiveTab] = useState('about');
-  const [images, setImages] = useState([
+  const [activeTab, setActiveTab] = useState<TabType>('about');
+  const [indicatorStyle, setIndicatorStyle] = useState({});
+  const tabsRef = useRef<(HTMLButtonElement | null)[]>([]);
+  
+  const [images, setImages] = useState<string[]>([
     'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=400&fit=crop',
     'https://images.unsplash.com/photo-1618556450991-2f1af64e8191?w=400&h=400&fit=crop',
+    'https://images.unsplash.com/photo-1618556450994-a6a128ef0d9d?w=400&h=400&fit=crop',
     'https://images.unsplash.com/photo-1618556450994-a6a128ef0d9d?w=400&h=400&fit=crop'
   ]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  const tabContent = {
+  const tabContent: TabContent = {
     about: "Hello! I'm Dave, your sales rep here from Salesforce. I've been working at this awesome company for 3 years now.\n\nI was born and raised in Albany, NY& have been living in Santa Carla for the past 10 years my wife Tiffany and my 4 year old twin daughters- Emma and Ella. Both of them are just starting school, so my calender is usually blocked between 9-10 AM. This is a...",
     experiences: "With over 3 years at Salesforce, I've successfully managed enterprise accounts and driven significant revenue growth. My expertise includes solution selling, stakeholder management, and building long-term client relationships.\n\nI specialize in cloud solutions and have helped numerous businesses transform their operations through strategic technology implementations.",
     recommended: "I highly recommend exploring Salesforce's latest AI-powered features for sales automation. The Einstein Analytics platform has been a game-changer for data-driven decision making.\n\nFor new users, I suggest starting with Trailhead - Salesforce's free learning platform. It's an excellent way to get hands-on experience with the platform."
+  };
+
+  // Update indicator position when active tab changes
+  useEffect(() => {
+    const activeTabIndex = ['about', 'experiences', 'recommended'].indexOf(activeTab);
+    const activeTabElement = tabsRef.current[activeTabIndex];
+    
+    if (activeTabElement) {
+      const { offsetLeft, offsetWidth } = activeTabElement;
+      setIndicatorStyle({
+        transform: `translateX(${offsetLeft}px)`,
+        width: `${offsetWidth}px`,
+        transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+      });
+    }
+  }, [activeTab]);
+
+  const handleTabClick = (tab: TabType) => {
+    setActiveTab(tab);
+  };
+
+  // Proper ref callback functions
+  const setTabRef = (index: number) => (el: HTMLButtonElement | null) => {
+    tabsRef.current[index] = el;
   };
 
   const handleAddImage = () => {
@@ -23,12 +59,12 @@ export default function ProfileWidget() {
     setImages([...images, newImage]);
   };
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
+      reader.onload = (event: ProgressEvent<FileReader>) => {
+        if (event.target?.result && typeof event.target.result === 'string') {
           setImages([...images, event.target.result]);
         }
       };
@@ -45,6 +81,11 @@ export default function ProfileWidget() {
   };
 
   const visibleImages = images.slice(currentImageIndex, currentImageIndex + 3);
+
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const target = e.target as HTMLImageElement;
+    target.src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=400&fit=crop';
+  };
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-[#373E44] to-[#191B1F] flex">
@@ -63,37 +104,40 @@ export default function ProfileWidget() {
             </div>
 
             {/* Tabs Container */}
-            <div className="bg-[#171717] rounded-[23px] p-[6px] flex gap-[6px] mb-[31px] shadow-[inset_0px_4.96px_12.4px_2.48px_rgba(0,0,0,0.5)]">
+            <div className="bg-[#171717] rounded-[23px] p-[6px] flex gap-[6px] mb-[31px] shadow-[inset_0px_4.96px_12.4px_2.48px_rgba(0,0,0,0.5)] relative">
+              {/* Animated Sliding Indicator */}
+              <div 
+                className="absolute h-[calc(100%-11.5px)] bg-[#28292F] rounded-[16px] shadow-[13.49px_16.87px_67.47px_8.43px_rgba(0,0,0,0.55),inset_0px_4.22px_13.49px_3.37px_rgba(255,255,255,0.05)]"
+                style={indicatorStyle}
+              />
+              
               <button
-                onClick={() => setActiveTab('about')}
-                className={`flex-1 py-[12px] px-[24px] rounded-[16px] text-[18px] font-medium transition-all duration-300 ${
-                  activeTab === 'about'
-                    ? 'bg-[#28292F] text-white shadow-[13.49px_16.87px_67.47px_8.43px_rgba(0,0,0,0.55),inset_0px_4.22px_13.49px_3.37px_rgba(255,255,255,0.05)]'
-                    : 'text-[#A3ADB2] hover:text-[#ccc]'
+                ref={setTabRef(0)}
+                onClick={() => handleTabClick('about')}
+                className={`flex-1 py-[12px] px-[24px] rounded-[16px] text-[18px] font-medium transition-all duration-300 relative z-10 ${
+                  activeTab === 'about' ? 'text-white' : 'text-[#A3ADB2] hover:text-[#ccc]'
                 }`}
               >
                 About Me
               </button>
               <button
-                onClick={() => setActiveTab('experiences')}
-                className={`flex-1 py-[12px] px-[24px] rounded-[16px] text-[18px] font-medium transition-all duration-300 ${
-                  activeTab === 'experiences'
-                    ? 'bg-[#28292F] text-white shadow-[13.49px_16.87px_67.47px_8.43px_rgba(0,0,0,0.55),inset_0px_4.22px_13.49px_3.37px_rgba(255,255,255,0.05)]'
-                    : 'text-[#A3ADB2] hover:text-[#ccc]'
+                ref={setTabRef(1)}
+                onClick={() => handleTabClick('experiences')}
+                className={`flex-1 py-[12px] px-[24px] rounded-[16px] text-[18px] font-medium transition-all duration-300 relative z-10 ${
+                  activeTab === 'experiences' ? 'text-white' : 'text-[#A3ADB2] hover:text-[#ccc]'
                 }`}
               >
                 Experiences
               </button>
               <button
-                onClick={() => setActiveTab('recommended')}
-                className={`flex-1 py-[12px] px-[20px] rounded-[16px] text-[18px] font-medium transition-all duration-300 ${
-                  activeTab === 'recommended'
-                    ? 'bg-[#28292F] text-white shadow-[13.49px_16.87px_67.47px_8.43px_rgba(0,0,0,0.55),inset_0px_4.22px_13.49px_3.37px_rgba(255,255,255,0.05)]'
-                    : 'text-[#A3ADB2] hover:text-[#ccc]'
-                }`}
-              >
-                Recommended
-              </button>
+  ref={setTabRef(2)}
+  onClick={() => handleTabClick('recommended')}
+  className={`flex-1 py-[12px] px-[24px] rounded-[16px] text-[18px] font-medium transition-all duration-300 relative z-10 ${
+    activeTab === 'recommended' ? 'text-white' : 'text-[#A3ADB2] hover:text-[#ccc]'
+  }`}
+>
+  Recommended
+</button>
             </div>
 
             {/* Tab Content with Custom Scrollbar */}
@@ -171,10 +215,7 @@ export default function ProfileWidget() {
                     src={img}
                     alt={`Gallery ${currentImageIndex + index + 1}`}
                     className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const target = e.target;
-                      target.src = `https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=400&fit=crop`;
-                    }}
+                    onError={handleImageError}
                   />
                 </div>
               ))}
