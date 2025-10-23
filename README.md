@@ -4,7 +4,7 @@ A responsive React/Next.js implementation of a profile widget with tabbed conten
 
 ## 🚀 Live Demo
 
-[Live Assignment Link](#) 
+[Live Assignment Link](https://profile-widget-odrfhv11z-15hir23s-projects.vercel.app)
 
 ## 📁 GitHub Repository
 
